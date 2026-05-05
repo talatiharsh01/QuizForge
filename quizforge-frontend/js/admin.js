@@ -1,25 +1,77 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // Check if user is logged in
-    const userStr = localStorage.getItem('currentUser');
-    if(!userStr) {
-        window.location.href = 'login.html';
-        return;
+// ─── Session Management ───
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000;
+let sessionTimer = null;
+
+function refreshSession() {
+    clearTimeout(sessionTimer);
+    localStorage.setItem('sessionTimestamp', Date.now().toString());
+    sessionTimer = setTimeout(() => {
+        showToast('Session expired. Please log in again.', 'error');
+        setTimeout(() => logout(), 1500);
+    }, SESSION_TIMEOUT_MS);
+}
+
+function checkSession() {
+    const ts = localStorage.getItem('sessionTimestamp');
+    if (ts && (Date.now() - parseInt(ts)) > SESSION_TIMEOUT_MS) {
+        logout();
+        return false;
     }
+    refreshSession();
+    return true;
+}
+
+document.addEventListener('click', refreshSession);
+document.addEventListener('keydown', refreshSession);
+
+// ─── Toast Notifications ───
+function showToast(message, type = 'success') {
+    const existing = document.getElementById('qf-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'qf-toast';
+    const bgColor = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#f59e0b';
+    const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : '⚠️';
+    toast.style.cssText = `
+        position:fixed; top:24px; right:24px; z-index:99999;
+        background:${bgColor}; color:#fff; padding:14px 24px;
+        border-radius:12px; font-family:'DM Sans',sans-serif;
+        font-size:0.95rem; font-weight:500;
+        box-shadow:0 8px 32px rgba(0,0,0,0.3);
+        animation: slideIn 0.3s ease-out;
+        max-width:400px;
+    `;
+    toast.textContent = `${icon} ${message}`;
+
+    if (!document.getElementById('toast-styles')) {
+        const style = document.createElement('style');
+        style.id = 'toast-styles';
+        style.textContent = `
+            @keyframes slideIn { from { transform: translateX(120%); opacity:0; } to { transform: translateX(0); opacity:1; } }
+            @keyframes slideOut { from { transform: translateX(0); opacity:1; } to { transform: translateX(120%); opacity:0; } }
+        `;
+        document.head.appendChild(style);
+    }
+
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease-in forwards';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// ─── Initialization ───
+document.addEventListener('DOMContentLoaded', () => {
+    const userStr = localStorage.getItem('currentUser');
+    if (!userStr) { window.location.href = 'login.html'; return; }
 
     const user = JSON.parse(userStr);
-    
-    // Security check: ensure only Admins access this page
-    if(user.role !== 'ADMIN') {
-        window.location.href = 'student.html';
-        return;
-    }
+    if (user.role !== 'ADMIN') { window.location.href = 'student.html'; return; }
+    if (!checkSession()) return;
 
-    // Populate dashboard
     document.getElementById('admin-name-display').textContent = user.username;
-    
-    console.log("Admin dashboard loaded for:", user.username);
-    
-    // Load Question Bank & Stats
+
     loadQuestions();
     loadAdminStats();
 });
@@ -91,13 +143,12 @@ async function addQuestion() {
     const topic = document.getElementById('new-q-topic').value;
     const correctIdx = document.querySelector('input[name="correct-opt"]:checked').value;
 
-    if(!text) return alert("Please enter the question text.");
+    if(!text) return showToast('Please enter the question text.', 'warning');
 
     const options = [];
     for(let i=0; i<4; i++) {
         const optText = document.getElementById(`opt-${i}`).value;
         if(optText) {
-            // Include both correct and isCorrect to safely map to DTO boolean field
             options.push({
                 text: optText,
                 correct: (i.toString() === correctIdx),
@@ -106,7 +157,7 @@ async function addQuestion() {
         }
     }
 
-    if(options.length < 2) return alert("Provide at least 2 options.");
+    if(options.length < 2) return showToast('Provide at least 2 options.', 'warning');
 
     const payload = { text, topic, options };
 
@@ -118,18 +169,15 @@ async function addQuestion() {
         });
         
         if(res.ok) {
-            const successMsg = document.getElementById('q-add-success');
-            successMsg.style.display = 'block';
-            setTimeout(() => { successMsg.style.display = 'none'; }, 2000);
+            showToast('Question added to the bank!');
             
-            // Clear form
             document.getElementById('new-q-text').value = '';
             for(let i=0; i<4; i++) document.getElementById(`opt-${i}`).value = '';
             
-            loadQuestions(); // Reload list
+            loadQuestions();
         }
     } catch(e) {
-        alert("Failed to save: " + e);
+        showToast('Failed to save: ' + e, 'error');
     }
 }
 
@@ -174,8 +222,8 @@ async function saveCustomQuiz() {
     const checkboxes = document.querySelectorAll('.q-select-cb:checked');
     const questionIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
 
-    if (!title) return alert("Please enter a Quiz Title.");
-    if (questionIds.length === 0) return alert("Please select at least 1 question.");
+    if (!title) return showToast('Please enter a Quiz Title.', 'warning');
+    if (questionIds.length === 0) return showToast('Please select at least 1 question.', 'warning');
 
     const user = JSON.parse(localStorage.getItem('currentUser'));
 
@@ -193,16 +241,14 @@ async function saveCustomQuiz() {
         });
         
         if (res.ok) {
-            const successMsg = document.getElementById('quiz-add-success');
-            successMsg.style.display = 'block';
-            setTimeout(() => { successMsg.style.display = 'none'; }, 2000);
+            showToast(`Quiz "${title}" created with ${questionIds.length} questions!`);
             
             document.getElementById('new-quiz-title').value = '';
             document.querySelectorAll('.q-select-cb').forEach(cb => cb.checked = false);
         } else {
-            alert("Failed to save quiz");
+            showToast('Failed to save quiz', 'error');
         }
     } catch(e) {
-        alert("Failed to save quiz: " + e);
+        showToast('Failed to save quiz: ' + e, 'error');
     }
 }

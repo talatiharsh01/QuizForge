@@ -1,42 +1,108 @@
 let currentQuiz = null;
 let adminQuizzesList = [];
+let isSubmitting = false;
 
+// ─── Session Management ───
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+let sessionTimer = null;
+
+function refreshSession() {
+    clearTimeout(sessionTimer);
+    localStorage.setItem('sessionTimestamp', Date.now().toString());
+    sessionTimer = setTimeout(() => {
+        showToast('Session expired. Please log in again.', 'error');
+        setTimeout(() => logout(), 1500);
+    }, SESSION_TIMEOUT_MS);
+}
+
+function checkSession() {
+    const ts = localStorage.getItem('sessionTimestamp');
+    if (ts && (Date.now() - parseInt(ts)) > SESSION_TIMEOUT_MS) {
+        logout();
+        return false;
+    }
+    refreshSession();
+    return true;
+}
+
+// Refresh session on any user interaction
+document.addEventListener('click', refreshSession);
+document.addEventListener('keydown', refreshSession);
+
+// ─── Toast Notifications ───
+function showToast(message, type = 'success') {
+    // Remove existing toast
+    const existing = document.getElementById('qf-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'qf-toast';
+    const bgColor = type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#f59e0b';
+    const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : '⚠️';
+    toast.style.cssText = `
+        position:fixed; top:24px; right:24px; z-index:99999;
+        background:${bgColor}; color:#fff; padding:14px 24px;
+        border-radius:12px; font-family:'DM Sans',sans-serif;
+        font-size:0.95rem; font-weight:500;
+        box-shadow:0 8px 32px rgba(0,0,0,0.3);
+        animation: slideIn 0.3s ease-out;
+        max-width:400px;
+    `;
+    toast.textContent = `${icon} ${message}`;
+
+    // Add animation keyframes if not present
+    if (!document.getElementById('toast-styles')) {
+        const style = document.createElement('style');
+        style.id = 'toast-styles';
+        style.textContent = `
+            @keyframes slideIn { from { transform: translateX(120%); opacity:0; } to { transform: translateX(0); opacity:1; } }
+            @keyframes slideOut { from { transform: translateX(0); opacity:1; } to { transform: translateX(120%); opacity:0; } }
+        `;
+        document.head.appendChild(style);
+    }
+
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease-in forwards';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// ─── Initialization ───
 document.addEventListener('DOMContentLoaded', () => {
     const userStr = localStorage.getItem('currentUser');
-    if(!userStr) {
-        window.location.href = 'login.html';
-        return;
-    }
+    if (!userStr) { window.location.href = 'login.html'; return; }
 
     const user = JSON.parse(userStr);
-    if(user.role !== 'STUDENT') {
-        window.location.href = 'admin.html';
-        return;
-    }
+    if (user.role !== 'STUDENT') { window.location.href = 'admin.html'; return; }
+    if (!checkSession()) return;
 
     document.getElementById('student-name-display').textContent = user.username;
-    
-    // Load assigned quizzes & history
+
     loadAdminQuizzes();
     loadStudentHistory(user.id);
 });
 
+// ─── History Loading ───
 async function loadStudentHistory(studentId) {
     try {
         const res = await fetch(`${API_BASE_URL}/student/attempts/${studentId}`);
         const attempts = await res.json();
-        
+
         document.getElementById('s-total').textContent = attempts.length;
-        if(attempts.length > 0) {
+        if (attempts.length > 0) {
             const best = Math.max(...attempts.map(a => a.score));
             const sum = attempts.reduce((acc, a) => acc + (a.score / a.totalQuestions * 100), 0);
             document.getElementById('s-best').textContent = best;
             document.getElementById('s-avg').textContent = Math.round(sum / attempts.length) + '%';
+        } else {
+            document.getElementById('s-best').textContent = '—';
+            document.getElementById('s-avg').textContent = '—';
         }
 
         const listDiv = document.getElementById('student-history-body');
-        if(attempts.length === 0) {
-            listDiv.innerHTML = '<div class="empty-history">No history found. Take a quiz!</div>';
+        if (attempts.length === 0) {
+            listDiv.innerHTML = '<div class="empty-history">No history yet. Take your first quiz!</div>';
             return;
         }
 
@@ -53,77 +119,90 @@ async function loadStudentHistory(studentId) {
             </div>`;
         });
         listDiv.innerHTML = html;
-    } catch(e) {
+    } catch (e) {
         console.error(e);
     }
 }
 
+// ─── Admin Quizzes ───
 function toggleTopic(topic) {
-    const el = document.getElementById(`pill-${topic}`);
-    el.classList.toggle('active');
+    document.getElementById(`pill-${topic}`).classList.toggle('active');
 }
 
 async function loadAdminQuizzes() {
     try {
         const res = await fetch(`${API_BASE_URL}/student/quizzes`);
         adminQuizzesList = await res.json();
-        
+
+        // Check which quizzes the student already attempted
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        const histRes = await fetch(`${API_BASE_URL}/student/attempts/${user.id}`);
+        const attempts = await histRes.json();
+        const attemptedQuizIds = new Set(attempts.map(a => a.quiz.id));
+
         const listDiv = document.getElementById('admin-quizzes-list');
-        if(adminQuizzesList.length === 0) {
+        if (adminQuizzesList.length === 0) {
             listDiv.innerHTML = '<div class="empty-history">No quizzes assigned by Admin.</div>';
             return;
         }
 
         let html = '';
         adminQuizzesList.forEach(q => {
+            const alreadyDone = attemptedQuizIds.has(q.id);
             html += `
             <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); padding-bottom:1rem; margin-bottom:1rem;">
                 <div>
                     <h3 style="margin:0; font-size:1.1rem; color:var(--text);">${q.title}</h3>
                     <span style="font-size:0.8rem; color:var(--muted);">${q.questions.length} questions</span>
                 </div>
-                <button class="login-btn admin" style="width:auto; padding:0.5rem 1rem; border-radius:6px;" onclick='startAdminQuiz(${q.id})'>Take Quiz</button>
+                ${alreadyDone
+                    ? `<span style="color:var(--muted); font-size:0.85rem; font-style:italic;">✅ Completed</span>`
+                    : `<button class="login-btn admin" style="width:auto; padding:0.5rem 1rem; border-radius:6px;" onclick='startAdminQuiz(${q.id})'>Take Quiz</button>`
+                }
             </div>`;
         });
         listDiv.innerHTML = html;
-    } catch(e) {
+    } catch (e) {
         console.error(e);
     }
 }
 
 function startAdminQuiz(id) {
     const quiz = adminQuizzesList.find(q => q.id === id);
-    if(quiz) startQuiz(quiz);
+    if (quiz) startQuiz(quiz);
 }
 
+// ─── Random Quiz Generator ───
 async function generateRandomQuiz() {
     const topics = [];
     document.querySelectorAll('.tpill.active').forEach(p => {
-        if(p.id === 'pill-java') topics.push('java');
-        if(p.id === 'pill-os') topics.push('os');
-        if(p.id === 'pill-env') topics.push('env');
+        if (p.id === 'pill-java') topics.push('java');
+        if (p.id === 'pill-os') topics.push('os');
+        if (p.id === 'pill-env') topics.push('env');
     });
 
-    if(topics.length === 0) return alert('Select at least one topic!');
+    if (topics.length === 0) return showToast('Select at least one topic!', 'warning');
 
     const count = document.getElementById('totalQ').value;
 
     try {
         const res = await fetch(`${API_BASE_URL}/student/quizzes/random?topics=${topics.join(',')}&count=${count}`);
         const quiz = await res.json();
-        if(!quiz.questions || quiz.questions.length === 0) return alert('No questions found for the selected topics!');
+        if (!quiz.questions || quiz.questions.length === 0) return showToast('No questions found for the selected topics!', 'error');
+        showToast(`Generated ${quiz.questions.length} questions!`);
         startQuiz(quiz);
-    } catch(e) {
-        alert("Failed to generate quiz");
+    } catch (e) {
+        showToast('Failed to generate quiz', 'error');
         console.error(e);
     }
 }
 
-// Ensure the HTML button calls generateRandomQuiz instead of the old function
 window.generateQuiz = generateRandomQuiz;
 
+// ─── Quiz Taking ───
 function startQuiz(quiz) {
     currentQuiz = quiz;
+    isSubmitting = false;
     document.getElementById('quiz-page').style.display = 'block';
     document.getElementById('quiz-title-display').textContent = quiz.title;
 
@@ -132,7 +211,7 @@ function startQuiz(quiz) {
         let optsHtml = '';
         q.options.forEach((opt) => {
             optsHtml += `
-            <label style="display:block; padding:0.8rem; margin-bottom:0.5rem; background:var(--bg); border:1px solid var(--border); border-radius:8px; cursor:pointer; color:var(--text);">
+            <label style="display:block; padding:0.8rem; margin-bottom:0.5rem; background:var(--bg); border:1px solid var(--border); border-radius:8px; cursor:pointer; color:var(--text); transition: all 0.2s;">
                 <input type="radio" name="q-${qIndex}" value="${opt.id}" style="margin-right:10px;"> ${opt.text}
             </label>`;
         });
@@ -146,21 +225,32 @@ function startQuiz(quiz) {
             ${optsHtml}
         </div>`;
     });
-    
+
     document.getElementById('quiz-questions-container').innerHTML = html;
     window.scrollTo(0, 0);
 }
 
 function exitQuiz() {
-    if(confirm("Are you sure you want to exit? Your progress will be lost.")) {
+    if (confirm('Are you sure you want to exit? Your progress will be lost.')) {
         document.getElementById('quiz-page').style.display = 'none';
         currentQuiz = null;
     }
 }
 
+// ─── Quiz Submission (with duplicate blocking) ───
 async function submitQuiz() {
-    if(!currentQuiz) return;
-    
+    if (!currentQuiz) return;
+    if (isSubmitting) return showToast('Quiz is already being submitted...', 'warning');
+
+    // Check for unanswered questions
+    let unanswered = 0;
+    currentQuiz.questions.forEach((q, i) => {
+        if (!document.querySelector(`input[name="q-${i}"]:checked`)) unanswered++;
+    });
+    if (unanswered > 0 && !confirm(`You have ${unanswered} unanswered question(s). Submit anyway?`)) return;
+
+    isSubmitting = true;
+
     let score = 0;
     currentQuiz.questions.forEach((q, qIndex) => {
         const selected = document.querySelector(`input[name="q-${qIndex}"]:checked`);
@@ -180,18 +270,28 @@ async function submitQuiz() {
     };
 
     try {
-        await fetch(`${API_BASE_URL}/student/attempts`, {
+        const res = await fetch(`${API_BASE_URL}/student/attempts`, {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        
-        alert(`🎉 Quiz Completed!\n\nYour Score: ${score} out of ${currentQuiz.questions.length}`);
+
+        const data = await res.json();
+
+        if (data.success === false) {
+            showToast(data.message, 'error');
+        } else {
+            showToast(data.message, 'success');
+        }
+
         document.getElementById('quiz-page').style.display = 'none';
         currentQuiz = null;
-        
+        isSubmitting = false;
+
         loadStudentHistory(user.id);
-    } catch(e) {
-        alert("Failed to save attempt.");
+        loadAdminQuizzes(); // Refresh to show "Completed" badge
+    } catch (e) {
+        isSubmitting = false;
+        showToast('Failed to save attempt. Check your connection.', 'error');
     }
 }

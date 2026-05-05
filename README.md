@@ -1,81 +1,119 @@
 # QuizForge ⚡
 
-QuizForge is a modern, role-based web application for managing and taking technical quizzes. It features a fully decoupled architecture with a sleek vanilla HTML/CSS/JS frontend, a robust Spring Boot REST API backend, and a cloud-hosted Neon PostgreSQL database.
+A modern, full-stack quiz management platform built with **Spring Boot** and vanilla **HTML/CSS/JS**. QuizForge features role-based access (Admin & Student), a cloud-hosted PostgreSQL database, BCrypt password security, and a sleek dark-mode UI.
+
+---
+
+## ✨ Features
+
+| Role | Capabilities |
+|------|-------------|
+| **Admin** | Create/delete questions, build custom quizzes from the question bank, view platform-wide statistics (total students, quizzes taken, avg score) |
+| **Student** | Browse admin-assigned quizzes, generate random quizzes by topic, take quizzes with instant grading, view personal attempt history & stats |
+
+- 🔐 **BCrypt** password hashing for all accounts
+- ☁️ **Neon PostgreSQL** cloud database — data persists across restarts
+- 📊 **Live dashboard stats** for both Admin and Student roles
+- 🎲 **Random quiz generator** with topic filtering (Java / OS / Environment)
+
+---
 
 ## 🏗 System Architecture
 
-The application is split into two distinct parts: a static frontend and a Java backend. They communicate entirely over REST APIs.
-
 ```mermaid
-graph TD
-    subgraph Frontend [Frontend (Static Web Server)]
-        UI[Browser HTML/CSS/JS]
+graph LR
+    subgraph Client ["Frontend · Port 8000"]
+        HTML["HTML Pages"]
+        JS["JavaScript Modules"]
+        CSS["CSS Stylesheets"]
     end
 
-    subgraph Backend [Backend (Spring Boot Server)]
-        Controller[REST Controllers]
-        Service[Service Layer]
-        Repository[JPA Repositories]
+    subgraph Server ["Backend · Port 8080"]
+        Auth["AuthController\n/api/auth"]
+        Admin["AdminController\n/api/admin"]
+        Student["StudentController\n/api/student"]
+        Repo["JPA Repositories"]
     end
 
-    subgraph Cloud [Cloud]
-        DB[(Neon PostgreSQL)]
+    subgraph DB ["Cloud Database"]
+        PG[("Neon PostgreSQL")]
     end
 
-    UI <-->|HTTP JSON Requests| Controller
-    Controller <--> Service
-    Service <--> Repository
-    Repository <-->|JDBC| DB
+    HTML --> JS
+    JS -->|"REST API\n(JSON over HTTP)"| Auth
+    JS -->|"REST API"| Admin
+    JS -->|"REST API"| Student
+    Auth --> Repo
+    Admin --> Repo
+    Student --> Repo
+    Repo -->|"JDBC + Hibernate"| PG
 ```
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/auth/register` | Register a new student account |
+| `POST` | `/api/auth/login` | Login (Admin or Student) |
+| `GET` | `/api/admin/questions` | List all questions in the bank |
+| `POST` | `/api/admin/questions` | Add a new question with options |
+| `DELETE` | `/api/admin/questions/{id}` | Delete a question |
+| `GET` | `/api/admin/quizzes` | List all admin-created quizzes |
+| `POST` | `/api/admin/quizzes` | Create a custom quiz from selected questions |
+| `GET` | `/api/admin/stats` | Get platform statistics |
+| `GET` | `/api/student/quizzes` | List quizzes available to students |
+| `GET` | `/api/student/quizzes/random` | Generate a random quiz by topics & count |
+| `POST` | `/api/student/attempts` | Save a quiz attempt with score |
+| `GET` | `/api/student/attempts/{studentId}` | Get a student's quiz history |
+
+---
 
 ## 🗄 Database ER Diagram
 
-The database is highly relational, utilizing Foreign Keys to link Users, Questions, Quizzes, and Attempts.
-
 ```mermaid
 erDiagram
-    USERS {
+    users {
         bigint id PK
         varchar username UK
         varchar email
-        varchar password
+        varchar password "BCrypt hashed"
         enum role "ADMIN or STUDENT"
     }
-    
-    QUESTIONS {
+
+    questions {
         bigint id PK
         varchar text
-        varchar topic
+        varchar topic "java, os, or env"
     }
-    
-    QUESTION_OPTIONS {
+
+    question_options {
         bigint id PK
         varchar text
         boolean is_correct
         bigint question_id FK
     }
 
-    QUIZZES {
+    quizzes {
         bigint id PK
         varchar title
-        bigint created_by FK "Points to USERS"
+        bigint created_by FK
     }
 
-    QUIZ_QUESTIONS {
+    quiz_questions {
         bigint quiz_id FK
         bigint question_id FK
     }
 
-    QUIZ_ATTEMPTS {
+    quiz_attempts {
         bigint id PK
-        timestamp attempt_date
         int score
         int total_questions
-        bigint student_id FK "Points to USERS"
+        timestamp attempt_date
+        bigint student_id FK
         bigint quiz_id FK
     }
 
-    QUIZ_RESPONSES {
+    quiz_responses {
         bigint id PK
         boolean is_correct
         bigint attempt_id FK
@@ -83,66 +121,155 @@ erDiagram
         bigint selected_option_id FK
     }
 
-    USERS ||--o{ QUIZZES : "creates (Admin)"
-    USERS ||--o{ QUIZ_ATTEMPTS : "takes (Student)"
-    QUESTIONS ||--|{ QUESTION_OPTIONS : "has"
-    QUIZZES ||--|{ QUIZ_QUESTIONS : "includes"
-    QUESTIONS ||--|{ QUIZ_QUESTIONS : "included in"
-    QUIZ_ATTEMPTS ||--|{ QUIZ_RESPONSES : "records"
-    QUESTIONS ||--|{ QUIZ_RESPONSES : "answered in"
-    QUESTION_OPTIONS ||--o{ QUIZ_RESPONSES : "selected in"
+    users ||--o{ quizzes : "creates"
+    users ||--o{ quiz_attempts : "takes"
+    questions ||--|{ question_options : "has"
+    quizzes }|--|{ questions : "quiz_questions"
+    quizzes ||--o{ quiz_attempts : "attempted in"
+    quiz_attempts ||--o{ quiz_responses : "records"
+    questions ||--o{ quiz_responses : "answered in"
+    question_options ||--o{ quiz_responses : "selected in"
 ```
+
+---
+
+## 📁 Project Structure
+
+```
+QuizForge/
+├── README.md
+├── quizforge-backend/                  # Spring Boot REST API
+│   ├── build.gradle                    # Dependencies (Spring Boot, JPA, BCrypt, Lombok)
+│   ├── src/main/java/.../
+│   │   ├── QuizforgeBackendApplication.java   # Entry point + default admin seeder
+│   │   ├── controller/
+│   │   │   ├── AuthController.java     # /api/auth   — login & register
+│   │   │   ├── AdminController.java    # /api/admin  — questions, quizzes, stats
+│   │   │   └── StudentController.java  # /api/student — quizzes, random, attempts
+│   │   ├── model/
+│   │   │   ├── User.java              # Users table entity
+│   │   │   ├── Question.java          # Questions with cascaded options
+│   │   │   ├── QuestionOption.java    # MCQ answer options
+│   │   │   ├── Quiz.java             # Quiz with ManyToMany questions
+│   │   │   ├── QuizAttempt.java       # Student attempt record
+│   │   │   ├── QuizResponse.java      # Per-question response
+│   │   │   └── Role.java             # Enum: ADMIN, STUDENT
+│   │   ├── repository/                # JPA Repositories (CRUD)
+│   │   └── dto/                       # Data Transfer Objects
+│   └── src/main/resources/
+│       ├── application.properties          # Real config (gitignored)
+│       └── application.properties.example  # Template for new developers
+│
+└── quizforge-frontend/                # Static HTML/CSS/JS
+    ├── index.html                     # Redirect to login
+    ├── css/                           # Modular stylesheets
+    ├── js/
+    │   ├── api.js                     # API base URL config
+    │   ├── auth.js                    # Login, register, logout functions
+    │   ├── admin.js                   # Admin dashboard logic
+    │   └── student.js                 # Student dashboard + quiz taking logic
+    └── pages/
+        ├── login.html                 # Login page
+        ├── register.html              # Registration page
+        ├── admin.html                 # Admin dashboard
+        └── student.html               # Student dashboard + quiz UI
+```
+
+---
 
 ## 🚀 Getting Started (Local Development)
 
-To run this project on your local machine, you will need to start both the Frontend and the Backend servers.
+### Prerequisites
+- **Java 17+** (for Spring Boot backend)
+- **Python 3+** (for frontend static server)
 
-### 1. Start the Spring Boot Backend
-Requires **Java 17+**.
-1. Open a terminal.
-2. Navigate to the backend directory:
-   ```bash
-   cd quizforge-backend
-   ```
-3. Run the Gradle wrapper:
-   ```bash
-   ./gradlew bootRun
-   ```
-*The backend will start on `http://localhost:8080`. It automatically connects to the Neon PostgreSQL database configured in `application.properties`.*
+### 1. Configure the Database
 
-### 2. Start the Frontend Web Server
-Requires **Python 3+**.
-1. Open a **new** terminal.
-2. Navigate to the frontend directory:
-   ```bash
-   cd quizforge-frontend
-   ```
-3. Start the static server:
-   ```bash
-   python3 -m http.server 8000
-   ```
-*Access the application at `http://localhost:8000`.*
+Copy the example properties file and fill in your database credentials:
+
+```bash
+cd quizforge-backend/src/main/resources
+cp application.properties.example application.properties
+```
+
+Edit `application.properties` with your Neon PostgreSQL (or any PostgreSQL) credentials:
+
+```properties
+spring.datasource.url=jdbc:postgresql://your-host.neon.tech/neondb?sslmode=require
+spring.datasource.username=your_username
+spring.datasource.password=your_password
+
+admin.default.username=admin
+admin.default.password=your_secure_password
+admin.default.email=admin@example.com
+```
+
+### 2. Start the Backend
+
+```bash
+cd quizforge-backend
+./gradlew bootRun
+```
+
+> The backend starts on **http://localhost:8080**. On first run, Hibernate auto-creates all tables and seeds a default Admin account.
+
+### 3. Start the Frontend
+
+Open a **second terminal**:
+
+```bash
+cd quizforge-frontend
+python3 -m http.server 8000
+```
+
+> Open **http://localhost:8000** in your browser.
+
+### 4. Login
+
+- **Admin:** Use the credentials you set in `application.properties`
+- **Student:** Register a new account from the registration page
 
 ---
 
 ## 🌍 Hosting Online (Deployment)
 
-If you want to host this application publicly on the internet for free, follow this guide:
+### Database — Already Hosted
+If you're using **Neon PostgreSQL**, your database is already in the cloud. No changes needed.
 
-### 1. Database (Already Hosted)
-You are currently using **Neon PostgreSQL**, which is a cloud database. No changes are needed! The database is already live.
+### Backend — Render.com
 
-### 2. Host the Backend (Render.com or Railway.app)
-1. Push your `quizforge-backend` folder to a GitHub repository.
-2. Create an account on **Render** (https://render.com).
-3. Click "New Web Service" and connect your GitHub repo.
-4. Render will automatically detect it as a Java Spring Boot/Gradle app.
-5. Set the Start Command to: `./gradlew bootRun`
-6. Once deployed, Render will give you a live URL (e.g., `https://quizforge-api.onrender.com`).
+1. Push the project to a GitHub repository
+2. Create a **Web Service** on [Render](https://render.com) pointing to the `quizforge-backend` directory
+3. Set the **Build Command:** `./gradlew build`
+4. Set the **Start Command:** `java -jar build/libs/quizforge-backend-0.0.1-SNAPSHOT.jar`
+5. Add **Environment Variables** on Render for all sensitive properties:
+   - `SPRING_DATASOURCE_URL`
+   - `SPRING_DATASOURCE_USERNAME`
+   - `SPRING_DATASOURCE_PASSWORD`
+   - `ADMIN_DEFAULT_USERNAME`
+   - `ADMIN_DEFAULT_PASSWORD`
+   - `ADMIN_DEFAULT_EMAIL`
 
-### 3. Host the Frontend (Vercel or Netlify)
-1. Open `quizforge-frontend/js/api.js`.
-2. Change `API_BASE_URL` from `http://localhost:8080/api` to your new Render backend URL (`https://quizforge-api.onrender.com/api`).
-3. Push your `quizforge-frontend` folder to GitHub.
-4. Go to **Vercel** (https://vercel.com) and deploy the repository. 
-5. Vercel will instantly host your static HTML/CSS/JS files and give you a clean URL for your students to access!
+### Frontend — Vercel or Netlify
+
+1. Update `API_BASE_URL` in `quizforge-frontend/js/api.js` to point to your Render backend URL
+2. Deploy the `quizforge-frontend` folder to [Vercel](https://vercel.com) or [Netlify](https://netlify.com)
+
+---
+
+## 🛠 Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| **Frontend** | HTML5, CSS3, Vanilla JavaScript |
+| **Backend** | Java 17, Spring Boot 4, Spring Data JPA, Hibernate |
+| **Database** | PostgreSQL (Neon — cloud-hosted) |
+| **Security** | BCrypt (via `org.mindrot:jbcrypt`) |
+| **Build Tool** | Gradle |
+| **ORM** | Hibernate with JPA annotations |
+
+---
+
+## 📜 License
+
+This project was built as part of an Object-Oriented Programming coursework.

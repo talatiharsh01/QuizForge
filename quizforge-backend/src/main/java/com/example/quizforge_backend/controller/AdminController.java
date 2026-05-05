@@ -93,19 +93,10 @@ public class AdminController {
     public Map<String, Object> getAdminStats() {
         Map<String, Object> stats = new HashMap<>();
         
-        long students = userRepository.findAll().stream().filter(u -> "STUDENT".equals(u.getRole().name())).count();
-        long quizzesTaken = attemptRepository.count();
-        long questionsInBank = questionRepository.count();
-        
-        double avgScore = attemptRepository.findAll().stream()
-                .mapToInt(a -> a.getTotalQuestions() > 0 ? (int) Math.round((double) a.getScore() / a.getTotalQuestions() * 100) : 0)
-                .average()
-                .orElse(0.0);
-
-        stats.put("totalStudents", students);
-        stats.put("quizzesTaken", quizzesTaken);
-        stats.put("questionsInBank", questionsInBank);
-        stats.put("avgScore", Math.round(avgScore));
+        stats.put("totalStudents", userRepository.countByRole(com.example.quizforge_backend.model.Role.STUDENT));
+        stats.put("quizzesTaken", attemptRepository.count());
+        stats.put("questionsInBank", questionRepository.count());
+        stats.put("avgScore", Math.round(attemptRepository.getAverageScorePercentage()));
         
         return stats;
     }

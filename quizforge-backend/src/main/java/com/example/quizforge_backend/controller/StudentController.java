@@ -13,7 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -65,7 +67,16 @@ public class StudentController {
     }
 
     @PostMapping("/attempts")
-    public QuizAttempt saveAttempt(@RequestBody QuizAttemptDTO dto) {
+    public Map<String, Object> saveAttempt(@RequestBody QuizAttemptDTO dto) {
+        Map<String, Object> response = new HashMap<>();
+
+        // Block duplicate attempts on the same quiz
+        if (attemptRepository.existsByStudentIdAndQuizId(dto.getStudentId(), dto.getQuizId())) {
+            response.put("success", false);
+            response.put("message", "You have already attempted this quiz. Duplicate attempts are not allowed.");
+            return response;
+        }
+
         QuizAttempt attempt = new QuizAttempt();
         User student = userRepository.findById(dto.getStudentId()).orElseThrow();
         Quiz quiz = quizRepository.findById(dto.getQuizId()).orElseThrow();
@@ -75,7 +86,15 @@ public class StudentController {
         attempt.setScore(dto.getScore());
         attempt.setTotalQuestions(dto.getTotalQuestions());
         
-        return attemptRepository.save(attempt);
+        attemptRepository.save(attempt);
+
+        int pct = dto.getTotalQuestions() > 0 ? Math.round((float) dto.getScore() / dto.getTotalQuestions() * 100) : 0;
+        response.put("success", true);
+        response.put("message", "Quiz submitted! You scored " + dto.getScore() + "/" + dto.getTotalQuestions() + " (" + pct + "%)");
+        response.put("score", dto.getScore());
+        response.put("total", dto.getTotalQuestions());
+        response.put("percentage", pct);
+        return response;
     }
 
     @GetMapping("/attempts/{studentId}")

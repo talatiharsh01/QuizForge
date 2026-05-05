@@ -29,8 +29,9 @@ async function login(username, password, role) {
         
         const data = await response.json();
         if(data.success) {
-            // Save user info in localStorage for other pages
+            // Save user info and session timestamp
             localStorage.setItem('currentUser', JSON.stringify(data.user));
+            localStorage.setItem('sessionTimestamp', Date.now().toString());
         }
         return data;
     } catch (error) {
