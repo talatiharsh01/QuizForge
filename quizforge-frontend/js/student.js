@@ -16,9 +16,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('student-name-display').textContent = user.username;
     
-    // Load assigned quizzes
+    // Load assigned quizzes & history
     loadAdminQuizzes();
+    loadStudentHistory(user.id);
 });
+
+async function loadStudentHistory(studentId) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/student/attempts/${studentId}`);
+        const attempts = await res.json();
+        
+        document.getElementById('s-total').textContent = attempts.length;
+        if(attempts.length > 0) {
+            const best = Math.max(...attempts.map(a => a.score));
+            const sum = attempts.reduce((acc, a) => acc + (a.score / a.totalQuestions * 100), 0);
+            document.getElementById('s-best').textContent = best;
+            document.getElementById('s-avg').textContent = Math.round(sum / attempts.length) + '%';
+        }
+
+        const listDiv = document.getElementById('student-history-body');
+        if(attempts.length === 0) {
+            listDiv.innerHTML = '<div class="empty-history">No history found. Take a quiz!</div>';
+            return;
+        }
+
+        let html = '';
+        attempts.forEach(a => {
+            const date = new Date(a.attemptDate).toLocaleDateString();
+            const pct = Math.round((a.score / a.totalQuestions) * 100);
+            html += `
+            <div class="ht-row">
+                <span class="topics-badge">${a.quiz.title}</span>
+                <span>${a.totalQuestions} Qs</span>
+                <span class="score-badge ${pct > 70 ? 'high' : 'med'}">${pct}%</span>
+                <span class="ht-date">${date}</span>
+            </div>`;
+        });
+        listDiv.innerHTML = html;
+    } catch(e) {
+        console.error(e);
+    }
+}
 
 function toggleTopic(topic) {
     const el = document.getElementById(`pill-${topic}`);
@@ -120,7 +158,7 @@ function exitQuiz() {
     }
 }
 
-function submitQuiz() {
+async function submitQuiz() {
     if(!currentQuiz) return;
     
     let score = 0;
@@ -133,7 +171,27 @@ function submitQuiz() {
         }
     });
 
-    alert(`🎉 Quiz Completed!\n\nYour Score: ${score} out of ${currentQuiz.questions.length}`);
-    document.getElementById('quiz-page').style.display = 'none';
-    currentQuiz = null;
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    const payload = {
+        studentId: user.id,
+        quizId: currentQuiz.id,
+        score: score,
+        totalQuestions: currentQuiz.questions.length
+    };
+
+    try {
+        await fetch(`${API_BASE_URL}/student/attempts`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        
+        alert(`🎉 Quiz Completed!\n\nYour Score: ${score} out of ${currentQuiz.questions.length}`);
+        document.getElementById('quiz-page').style.display = 'none';
+        currentQuiz = null;
+        
+        loadStudentHistory(user.id);
+    } catch(e) {
+        alert("Failed to save attempt.");
+    }
 }

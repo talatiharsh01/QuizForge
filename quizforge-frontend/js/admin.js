@@ -19,9 +19,25 @@ document.addEventListener('DOMContentLoaded', () => {
     
     console.log("Admin dashboard loaded for:", user.username);
     
-    // Load Question Bank
+    // Load Question Bank & Stats
     loadQuestions();
+    loadAdminStats();
 });
+
+async function loadAdminStats() {
+    try {
+        const res = await fetch(`${API_BASE_URL}/admin/stats`);
+        const stats = await res.json();
+        
+        document.getElementById('a-students').textContent = stats.totalStudents;
+        document.getElementById('a-quizzes').textContent = stats.quizzesTaken;
+        document.getElementById('a-avg').textContent = stats.avgScore + '%';
+        // a-questions is already updated by loadQuestions, but we can sync it
+        document.getElementById('a-questions').textContent = stats.questionsInBank;
+    } catch(e) {
+        console.error(e);
+    }
+}
 
 let allQuestions = [];
 let currentFilter = 'java';

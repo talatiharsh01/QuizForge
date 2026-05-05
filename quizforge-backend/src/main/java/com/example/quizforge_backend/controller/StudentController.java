@@ -2,8 +2,13 @@ package com.example.quizforge_backend.controller;
 
 import com.example.quizforge_backend.model.Question;
 import com.example.quizforge_backend.model.Quiz;
+import com.example.quizforge_backend.model.QuizAttempt;
+import com.example.quizforge_backend.model.User;
 import com.example.quizforge_backend.repository.QuestionRepository;
 import com.example.quizforge_backend.repository.QuizRepository;
+import com.example.quizforge_backend.repository.QuizAttemptRepository;
+import com.example.quizforge_backend.repository.UserRepository;
+import com.example.quizforge_backend.dto.QuizAttemptDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,6 +26,12 @@ public class StudentController {
 
     @Autowired
     private QuestionRepository questionRepository;
+
+    @Autowired
+    private QuizAttemptRepository attemptRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @GetMapping("/quizzes")
     public List<Quiz> getAdminQuizzes() {
@@ -50,6 +61,25 @@ public class StudentController {
         randomQuiz.setTitle("Random Quiz: " + String.join(", ", topics).toUpperCase());
         randomQuiz.setQuestions(selectedQuestions);
         
-        return randomQuiz;
+        return quizRepository.save(randomQuiz);
+    }
+
+    @PostMapping("/attempts")
+    public QuizAttempt saveAttempt(@RequestBody QuizAttemptDTO dto) {
+        QuizAttempt attempt = new QuizAttempt();
+        User student = userRepository.findById(dto.getStudentId()).orElseThrow();
+        Quiz quiz = quizRepository.findById(dto.getQuizId()).orElseThrow();
+        
+        attempt.setStudent(student);
+        attempt.setQuiz(quiz);
+        attempt.setScore(dto.getScore());
+        attempt.setTotalQuestions(dto.getTotalQuestions());
+        
+        return attemptRepository.save(attempt);
+    }
+
+    @GetMapping("/attempts/{studentId}")
+    public List<QuizAttempt> getStudentHistory(@PathVariable Long studentId) {
+        return attemptRepository.findByStudentIdOrderByAttemptDateDesc(studentId);
     }
 }
