@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import java.util.Optional;
 
 @SpringBootApplication
+@org.springframework.cache.annotation.EnableCaching
 public class QuizforgeBackendApplication {
 
 	public static void main(String[] args) {

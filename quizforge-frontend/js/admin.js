@@ -95,14 +95,25 @@ let allQuestions = [];
 let currentFilter = 'java';
 
 async function loadQuestions() {
+    // Show cached data instantly
+    const cached = localStorage.getItem('qf_questions_cache');
+    if (cached) {
+        allQuestions = JSON.parse(cached);
+        document.getElementById('a-questions').textContent = allQuestions.length;
+        filterQuestions(currentFilter);
+    }
+
+    // Refresh from server in background
     try {
         const response = await fetch(`${API_BASE_URL}/admin/questions`);
         allQuestions = await response.json();
         
+        localStorage.setItem('qf_questions_cache', JSON.stringify(allQuestions));
         document.getElementById('a-questions').textContent = allQuestions.length;
         filterQuestions(currentFilter);
     } catch (e) {
         console.error("Failed to load questions", e);
+        if (!cached) filterQuestions(currentFilter);
     }
 }
 

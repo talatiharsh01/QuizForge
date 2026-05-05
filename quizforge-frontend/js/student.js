@@ -79,8 +79,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('student-name-display').textContent = user.username;
 
-    loadAdminQuizzes();
-    loadStudentHistory(user.id);
+    // Load both in parallel for speed
+    Promise.all([loadAdminQuizzes(), loadStudentHistory(user.id)]);
 });
 
 // ─── History Loading ───

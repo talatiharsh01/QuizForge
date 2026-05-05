@@ -12,6 +12,8 @@ import com.example.quizforge_backend.dto.OptionDTO;
 import com.example.quizforge_backend.dto.QuizCreationDTO;
 import com.example.quizforge_backend.repository.QuizAttemptRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,11 +39,13 @@ public class AdminController {
     private QuizAttemptRepository attemptRepository;
 
     @GetMapping("/questions")
+    @Cacheable("questions")
     public List<Question> getAllQuestions() {
         return questionRepository.findAll();
     }
 
     @PostMapping("/questions")
+    @CacheEvict(value = "questions", allEntries = true)
     public Question addQuestion(@RequestBody QuestionDTO dto) {
         Question q = new Question();
         q.setText(dto.getText());
@@ -64,16 +68,19 @@ public class AdminController {
     }
     
     @DeleteMapping("/questions/{id}")
+    @CacheEvict(value = "questions", allEntries = true)
     public void deleteQuestion(@PathVariable Long id) {
         questionRepository.deleteById(id);
     }
 
     @GetMapping("/quizzes")
+    @Cacheable("quizzes")
     public List<Quiz> getAllQuizzes() {
         return quizRepository.findAll();
     }
 
     @PostMapping("/quizzes")
+    @CacheEvict(value = "quizzes", allEntries = true)
     public Quiz createQuiz(@RequestBody QuizCreationDTO dto) {
         Quiz quiz = new Quiz();
         quiz.setTitle(dto.getTitle());

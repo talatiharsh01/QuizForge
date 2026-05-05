@@ -19,7 +19,7 @@ public class Quiz {
     @JoinColumn(name = "created_by")
     private User createdBy;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "quiz_questions",
         joinColumns = @JoinColumn(name = "quiz_id"),
