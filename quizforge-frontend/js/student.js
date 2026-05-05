@@ -85,6 +85,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ─── History Loading ───
 async function loadStudentHistory(studentId) {
+    const listDiv = document.getElementById('student-history-body');
+    listDiv.innerHTML = '<div style="text-align:center; padding:2rem; color:var(--muted);"><div class="spinner"></div> Loading history...</div>';
     try {
         const res = await fetch(`${API_BASE_URL}/student/attempts/${studentId}`);
         const attempts = await res.json();
@@ -237,7 +239,7 @@ function exitQuiz() {
     }
 }
 
-// ─── Quiz Submission (with duplicate blocking) ───
+// ─── Quiz Submission (with duplicate blocking + #11 answer review) ───
 async function submitQuiz() {
     if (!currentQuiz) return;
     if (isSubmitting) return showToast('Quiz is already being submitted...', 'warning');
@@ -252,13 +254,18 @@ async function submitQuiz() {
     isSubmitting = true;
 
     let score = 0;
+    const results = []; // Track per-question results for review
+
     currentQuiz.questions.forEach((q, qIndex) => {
         const selected = document.querySelector(`input[name="q-${qIndex}"]:checked`);
+        let selectedOptId = null;
+        let isCorrect = false;
         if (selected) {
-            const selectedOptId = parseInt(selected.value);
+            selectedOptId = parseInt(selected.value);
             const opt = q.options.find(o => o.id === selectedOptId);
-            if (opt && opt.correct) score++;
+            if (opt && opt.correct) { score++; isCorrect = true; }
         }
+        results.push({ selectedOptId, isCorrect });
     });
 
     const user = JSON.parse(localStorage.getItem('currentUser'));
@@ -277,21 +284,79 @@ async function submitQuiz() {
         });
 
         const data = await res.json();
-
         if (data.success === false) {
             showToast(data.message, 'error');
-        } else {
-            showToast(data.message, 'success');
+            isSubmitting = false;
+            return;
         }
 
-        document.getElementById('quiz-page').style.display = 'none';
-        currentQuiz = null;
-        isSubmitting = false;
+        showToast(data.message, 'success');
 
+        // #11: Show answer review — highlight correct/wrong answers
+        showAnswerReview(score);
+        
+        isSubmitting = false;
         loadStudentHistory(user.id);
-        loadAdminQuizzes(); // Refresh to show "Completed" badge
+        loadAdminQuizzes();
     } catch (e) {
         isSubmitting = false;
         showToast('Failed to save attempt. Check your connection.', 'error');
     }
+
+    function showAnswerReview(score) {
+        const pct = Math.round((score / currentQuiz.questions.length) * 100);
+        const emoji = pct >= 80 ? '🏆' : pct >= 50 ? '👍' : '📚';
+
+        // Add score header
+        const container = document.getElementById('quiz-questions-container');
+        const header = document.createElement('div');
+        header.style.cssText = 'text-align:center; padding:1.5rem; margin-bottom:1.5rem; border-radius:12px; background:var(--surface); border:1px solid var(--border);';
+        header.innerHTML = `
+            <div style="font-size:2.5rem;">${emoji}</div>
+            <div style="font-size:1.5rem; font-weight:bold; color:var(--text); margin:0.5rem 0;">You scored ${score}/${currentQuiz.questions.length} (${pct}%)</div>
+            <button onclick="closeReview()" style="margin-top:0.8rem; padding:0.6rem 1.5rem; background:var(--java); color:#fff; border:none; border-radius:8px; cursor:pointer; font-family:'DM Sans'; font-size:0.9rem;">Close Review</button>
+        `;
+        container.insertBefore(header, container.firstChild);
+
+        // Highlight each question
+        currentQuiz.questions.forEach((q, qIndex) => {
+            const correctOpt = q.options.find(o => o.correct);
+            const selectedRadio = document.querySelector(`input[name="q-${qIndex}"]:checked`);
+            const selectedOptId = selectedRadio ? parseInt(selectedRadio.value) : null;
+
+            // Disable all radios
+            document.querySelectorAll(`input[name="q-${qIndex}"]`).forEach(r => r.disabled = true);
+
+            // Highlight options
+            q.options.forEach(opt => {
+                const label = document.querySelector(`input[name="q-${qIndex}"][value="${opt.id}"]`)?.parentElement;
+                if (!label) return;
+
+                if (opt.correct) {
+                    label.style.border = '2px solid #10b981';
+                    label.style.background = 'rgba(16, 185, 129, 0.1)';
+                    label.innerHTML += ' <span style="color:#10b981; font-weight:bold;">✓ Correct</span>';
+                } else if (opt.id === selectedOptId && !opt.correct) {
+                    label.style.border = '2px solid #ef4444';
+                    label.style.background = 'rgba(239, 68, 68, 0.1)';
+                    label.innerHTML += ' <span style="color:#ef4444; font-weight:bold;">✗ Wrong</span>';
+                }
+            });
+        });
+
+        // Replace submit/exit buttons with close button
+        const btnArea = document.querySelector('#quiz-page .quiz-actions') || document.querySelector('#quiz-page');
+        const submitBtn = btnArea?.querySelector('[onclick*="submitQuiz"]');
+        const exitBtn = btnArea?.querySelector('[onclick*="exitQuiz"]');
+        if (submitBtn) submitBtn.style.display = 'none';
+        if (exitBtn) exitBtn.textContent = '← Back to Dashboard';
+
+        window.scrollTo(0, 0);
+    }
 }
+
+function closeReview() {
+    document.getElementById('quiz-page').style.display = 'none';
+    currentQuiz = null;
+}
+

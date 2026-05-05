@@ -162,36 +162,67 @@ async function loadQuestions() {
     }
 }
 
+let currentPage = 0;
+const PAGE_SIZE = 20;
+
 function filterQuestions(topic) {
     currentFilter = topic;
+    currentPage = 0; // Reset to first page on topic change
+    
     // Update active tab UI
     document.querySelectorAll('.btab').forEach(b => b.classList.remove('active'));
     document.querySelector(`.btab.${topic}`).classList.add('active');
 
+    renderQuestionPage();
+}
+
+function renderQuestionPage() {
     const listDiv = document.getElementById('question-list');
-    const filtered = allQuestions.filter(q => q.topic.toLowerCase() === topic);
+    const filtered = allQuestions.filter(q => q.topic.toLowerCase() === currentFilter);
 
     if (filtered.length === 0) {
         listDiv.innerHTML = '<div class="empty-history">No questions found in this topic. Add some!</div>';
         return;
     }
 
+    const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+    const start = currentPage * PAGE_SIZE;
+    const pageItems = filtered.slice(start, start + PAGE_SIZE);
+
     let html = '';
-    filtered.forEach((q, idx) => {
+    pageItems.forEach((q, idx) => {
         let optsHtml = q.options.map(o => 
             `<span class="bi-opt ${o.correct ? 'ok' : ''}">${o.text}</span>`
         ).join('');
 
         html += `
         <div class="bi">
-            <div class="bi-n">Q${idx+1}.</div>
+            <div class="bi-n">Q${start + idx + 1}.</div>
             <div>
                 <div class="bi-q"><span style="color:var(--${q.topic}); font-weight:bold; text-transform:uppercase; font-size:0.75em; margin-right:8px;">[${q.topic}]</span>${q.text}</div>
                 <div class="bi-opts">${optsHtml}</div>
             </div>
         </div>`;
     });
+
+    // #8: Pagination controls
+    if (totalPages > 1) {
+        html += `
+        <div style="display:flex; justify-content:center; align-items:center; gap:12px; padding:1rem 0; margin-top:0.5rem;">
+            <button onclick="goPage(-1)" style="padding:6px 16px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer; font-family:'DM Sans';" ${currentPage === 0 ? 'disabled style="opacity:0.4; padding:6px 16px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:not-allowed; font-family:DM Sans;"' : ''}>← Prev</button>
+            <span style="color:var(--muted); font-size:0.85rem;">Page ${currentPage + 1} of ${totalPages} · ${filtered.length} questions</span>
+            <button onclick="goPage(1)" style="padding:6px 16px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:pointer; font-family:'DM Sans';" ${currentPage >= totalPages - 1 ? 'disabled style="opacity:0.4; padding:6px 16px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text); cursor:not-allowed; font-family:DM Sans;"' : ''}>Next →</button>
+        </div>`;
+    }
+
     listDiv.innerHTML = html;
+}
+
+function goPage(dir) {
+    const filtered = allQuestions.filter(q => q.topic.toLowerCase() === currentFilter);
+    const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+    currentPage = Math.max(0, Math.min(currentPage + dir, totalPages - 1));
+    renderQuestionPage();
 }
 
 async function addQuestion() {

@@ -60,31 +60,37 @@ public class StudentController {
                 .collect(Collectors.toList());
 
         Quiz randomQuiz = new Quiz();
+        randomQuiz.setId(-1L); // Transient ID — not saved to DB
         randomQuiz.setTitle("Random Quiz: " + String.join(", ", topics).toUpperCase());
         randomQuiz.setQuestions(selectedQuestions);
         
-        return quizRepository.save(randomQuiz);
+        return randomQuiz; // NOT saved to database
     }
 
     @PostMapping("/attempts")
     public Map<String, Object> saveAttempt(@RequestBody QuizAttemptDTO dto) {
         Map<String, Object> response = new HashMap<>();
 
-        // Block duplicate attempts on the same quiz
-        if (attemptRepository.existsByStudentIdAndQuizId(dto.getStudentId(), dto.getQuizId())) {
-            response.put("success", false);
-            response.put("message", "You have already attempted this quiz. Duplicate attempts are not allowed.");
-            return response;
+        // For saved quizzes (not random), block duplicate attempts
+        if (dto.getQuizId() != null && dto.getQuizId() > 0) {
+            if (attemptRepository.existsByStudentIdAndQuizId(dto.getStudentId(), dto.getQuizId())) {
+                response.put("success", false);
+                response.put("message", "You have already attempted this quiz. Duplicate attempts are not allowed.");
+                return response;
+            }
         }
 
         QuizAttempt attempt = new QuizAttempt();
         User student = userRepository.findById(dto.getStudentId()).orElseThrow();
-        Quiz quiz = quizRepository.findById(dto.getQuizId()).orElseThrow();
-        
         attempt.setStudent(student);
-        attempt.setQuiz(quiz);
         attempt.setScore(dto.getScore());
         attempt.setTotalQuestions(dto.getTotalQuestions());
+
+        // Only link to quiz if it's a saved quiz (not random)
+        if (dto.getQuizId() != null && dto.getQuizId() > 0) {
+            Quiz quiz = quizRepository.findById(dto.getQuizId()).orElse(null);
+            attempt.setQuiz(quiz);
+        }
         
         attemptRepository.save(attempt);
 

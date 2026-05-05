@@ -17,7 +17,7 @@ public class QuizAttempt {
     private User student;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "quiz_id", nullable = false)
+    @JoinColumn(name = "quiz_id", nullable = true)
     private Quiz quiz;
 
     private int score;

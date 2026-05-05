@@ -38,6 +38,14 @@ public class AdminController {
     @Autowired
     private QuizAttemptRepository attemptRepository;
 
+    // #4: Server-side admin authorization check
+    private boolean isAdmin(Long userId) {
+        if (userId == null) return false;
+        return userRepository.findById(userId)
+                .map(u -> u.getRole() == com.example.quizforge_backend.model.Role.ADMIN)
+                .orElse(false);
+    }
+
     @GetMapping("/questions")
     @Cacheable("questions")
     public List<Question> getAllQuestions() {
