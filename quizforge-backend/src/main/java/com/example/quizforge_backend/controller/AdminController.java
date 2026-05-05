@@ -107,4 +107,34 @@ public class AdminController {
         
         return stats;
     }
+
+    @GetMapping("/students")
+    public List<Map<String, Object>> getStudents() {
+        List<User> students = userRepository.findAll().stream()
+                .filter(u -> u.getRole() == com.example.quizforge_backend.model.Role.STUDENT)
+                .toList();
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (User s : students) {
+            Map<String, Object> info = new HashMap<>();
+            info.put("id", s.getId());
+            info.put("username", s.getUsername());
+            info.put("email", s.getEmail());
+            
+            List<com.example.quizforge_backend.model.QuizAttempt> attempts = 
+                attemptRepository.findByStudentIdOrderByAttemptDateDesc(s.getId());
+            info.put("quizzesTaken", attempts.size());
+            
+            if (!attempts.isEmpty()) {
+                double avg = attempts.stream()
+                    .mapToInt(a -> a.getTotalQuestions() > 0 ? (int) Math.round((double) a.getScore() / a.getTotalQuestions() * 100) : 0)
+                    .average().orElse(0);
+                info.put("avgScore", Math.round(avg));
+            } else {
+                info.put("avgScore", 0);
+            }
+            result.add(info);
+        }
+        return result;
+    }
 }

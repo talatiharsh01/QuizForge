@@ -74,7 +74,52 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadQuestions();
     loadAdminStats();
+    loadStudents();
 });
+
+async function loadStudents() {
+    const listDiv = document.getElementById('admin-students-list');
+    try {
+        const res = await fetch(`${API_BASE_URL}/admin/students`);
+        const students = await res.json();
+
+        if (students.length === 0) {
+            listDiv.innerHTML = '<div class="empty-history">No students registered yet.</div>';
+            return;
+        }
+
+        let html = `
+        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:1rem;">`;
+
+        students.forEach(s => {
+            const scoreColor = s.avgScore >= 70 ? '#10b981' : s.avgScore >= 40 ? '#f59e0b' : '#ef4444';
+            html += `
+            <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.2rem; display:flex; flex-direction:column; gap:0.6rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-weight:600; color:var(--text); font-size:1.05rem;">👤 ${s.username}</span>
+                    <span style="font-size:0.75rem; color:var(--muted); background:var(--bg); padding:3px 8px; border-radius:6px;">#${s.id}</span>
+                </div>
+                <span style="font-size:0.82rem; color:var(--muted);">📧 ${s.email}</span>
+                <div style="display:flex; gap:1rem; margin-top:0.4rem;">
+                    <div style="flex:1; background:var(--bg); padding:0.5rem; border-radius:8px; text-align:center;">
+                        <div style="font-size:1.2rem; font-weight:bold; color:var(--text);">${s.quizzesTaken}</div>
+                        <div style="font-size:0.7rem; color:var(--muted); text-transform:uppercase;">Quizzes</div>
+                    </div>
+                    <div style="flex:1; background:var(--bg); padding:0.5rem; border-radius:8px; text-align:center;">
+                        <div style="font-size:1.2rem; font-weight:bold; color:${scoreColor};">${s.avgScore}%</div>
+                        <div style="font-size:0.7rem; color:var(--muted); text-transform:uppercase;">Avg Score</div>
+                    </div>
+                </div>
+            </div>`;
+        });
+
+        html += '</div>';
+        listDiv.innerHTML = html;
+    } catch (e) {
+        listDiv.innerHTML = '<div class="empty-history">Failed to load students.</div>';
+        console.error(e);
+    }
+}
 
 async function loadAdminStats() {
     try {
