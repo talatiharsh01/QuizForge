@@ -8,13 +8,23 @@ A modern, full-stack quiz management platform built with **Spring Boot** and van
 
 | Role | Capabilities |
 |------|-------------|
-| **Admin** | Create/delete questions, build custom quizzes from the question bank, view platform-wide statistics (total students, quizzes taken, avg score) |
-| **Student** | Browse admin-assigned quizzes, generate random quizzes by topic, take quizzes with instant grading, view personal attempt history & stats |
+| **Admin** | Create/delete questions, build custom quizzes from the question bank, view all registered students with per-student stats, view platform-wide statistics |
+| **Student** | Browse admin-assigned quizzes, generate random quizzes by topic, take quizzes with instant grading, review correct answers after submission, view personal attempt history & stats |
 
-- 🔐 **BCrypt** password hashing for all accounts
-- ☁️ **Neon PostgreSQL** cloud database — data persists across restarts
-- 📊 **Live dashboard stats** for both Admin and Student roles
+### Security & Performance
+- 🔐 **BCrypt** password hashing — passwords never stored or transmitted in plain text
+- 🛡 **Server-side role authorization** — admin endpoints verify the caller's role
+- 🚫 **Duplicate attempt blocking** — students cannot re-submit the same quiz
+- ✅ **Input validation** — username (≥3 chars), password (≥6 chars), email (regex + unique)
+- ⏱ **30-minute session timeout** — auto-logout on inactivity
+- ⚡ **Three-layer caching** — Spring `@Cacheable`, localStorage frontend cache, EAGER Hibernate fetching
+- 📄 **Paginated question bank** — 20 questions per page to keep the UI snappy
+
+### Quiz Experience
 - 🎲 **Random quiz generator** with topic filtering (Java / OS / Environment)
+- 📝 **Answer review** — after submission, correct answers are highlighted green (✓), wrong answers red (✗)
+- ⚠️ **Unanswered question warning** before submission
+- 🔔 **Toast notifications** — animated slide-in toasts replace all `alert()` popups
 
 ---
 
@@ -32,6 +42,7 @@ graph LR
         Auth["AuthController\n/api/auth"]
         Admin["AdminController\n/api/admin"]
         Student["StudentController\n/api/student"]
+        Cache["Spring Cache"]
         Repo["JPA Repositories"]
     end
 
@@ -44,26 +55,28 @@ graph LR
     JS -->|"REST API"| Admin
     JS -->|"REST API"| Student
     Auth --> Repo
-    Admin --> Repo
+    Admin --> Cache
+    Cache --> Repo
     Student --> Repo
-    Repo -->|"JDBC + Hibernate"| PG
+    Repo -->|"JDBC + Hibernate\n(EAGER fetch + batch)"| PG
 ```
 
 ### API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/auth/register` | Register a new student account |
+| `POST` | `/api/auth/register` | Register a new student account (validated) |
 | `POST` | `/api/auth/login` | Login (Admin or Student) |
-| `GET` | `/api/admin/questions` | List all questions in the bank |
+| `GET` | `/api/admin/questions` | List all questions in the bank (cached) |
 | `POST` | `/api/admin/questions` | Add a new question with options |
 | `DELETE` | `/api/admin/questions/{id}` | Delete a question |
-| `GET` | `/api/admin/quizzes` | List all admin-created quizzes |
+| `GET` | `/api/admin/quizzes` | List all admin-created quizzes (cached) |
 | `POST` | `/api/admin/quizzes` | Create a custom quiz from selected questions |
-| `GET` | `/api/admin/stats` | Get platform statistics |
+| `GET` | `/api/admin/stats` | Get platform statistics (COUNT queries) |
+| `GET` | `/api/admin/students` | List all students with per-student stats |
 | `GET` | `/api/student/quizzes` | List quizzes available to students |
 | `GET` | `/api/student/quizzes/random` | Generate a random quiz by topics & count |
-| `POST` | `/api/student/attempts` | Save a quiz attempt with score |
+| `POST` | `/api/student/attempts` | Save a quiz attempt (blocks duplicates) |
 | `GET` | `/api/student/attempts/{studentId}` | Get a student's quiz history |
 
 ---
@@ -75,7 +88,7 @@ erDiagram
     users {
         bigint id PK
         varchar username UK
-        varchar email
+        varchar email UK "Unique constraint"
         varchar password "BCrypt hashed"
         enum role "ADMIN or STUDENT"
     }
@@ -110,7 +123,7 @@ erDiagram
         int total_questions
         timestamp attempt_date
         bigint student_id FK
-        bigint quiz_id FK
+        bigint quiz_id FK "nullable for random quizzes"
     }
 
     quiz_responses {
@@ -139,22 +152,22 @@ erDiagram
 QuizForge/
 ├── README.md
 ├── quizforge-backend/                  # Spring Boot REST API
-│   ├── build.gradle                    # Dependencies (Spring Boot, JPA, BCrypt, Lombok)
+│   ├── build.gradle                    # Dependencies (Spring Boot, JPA, Cache, BCrypt, Lombok)
 │   ├── src/main/java/.../
-│   │   ├── QuizforgeBackendApplication.java   # Entry point + default admin seeder
+│   │   ├── QuizforgeBackendApplication.java   # Entry point + admin seeder + @EnableCaching
 │   │   ├── controller/
-│   │   │   ├── AuthController.java     # /api/auth   — login & register
-│   │   │   ├── AdminController.java    # /api/admin  — questions, quizzes, stats
+│   │   │   ├── AuthController.java     # /api/auth   — login, register (with validation)
+│   │   │   ├── AdminController.java    # /api/admin  — questions, quizzes, stats, students
 │   │   │   └── StudentController.java  # /api/student — quizzes, random, attempts
 │   │   ├── model/
-│   │   │   ├── User.java              # Users table entity
-│   │   │   ├── Question.java          # Questions with cascaded options
+│   │   │   ├── User.java              # Users entity (@JsonIgnore on password)
+│   │   │   ├── Question.java          # Questions with EAGER-fetched options
 │   │   │   ├── QuestionOption.java    # MCQ answer options
-│   │   │   ├── Quiz.java             # Quiz with ManyToMany questions
+│   │   │   ├── Quiz.java             # Quiz with EAGER ManyToMany questions
 │   │   │   ├── QuizAttempt.java       # Student attempt record
 │   │   │   ├── QuizResponse.java      # Per-question response
 │   │   │   └── Role.java             # Enum: ADMIN, STUDENT
-│   │   ├── repository/                # JPA Repositories (CRUD)
+│   │   ├── repository/                # JPA Repositories (CRUD + custom COUNT queries)
 │   │   └── dto/                       # Data Transfer Objects
 │   └── src/main/resources/
 │       ├── application.properties          # Real config (gitignored)
@@ -162,18 +175,35 @@ QuizForge/
 │
 └── quizforge-frontend/                # Static HTML/CSS/JS
     ├── index.html                     # Redirect to login
-    ├── css/                           # Modular stylesheets
+    ├── css/
+    │   ├── styles.css                 # Import hub
+    │   ├── core/base.css              # Variables, reset, spinner
+    │   ├── core/layout.css            # Layout utilities
+    │   └── pages/                     # Page-specific styles
     ├── js/
     │   ├── api.js                     # API base URL config
-    │   ├── auth.js                    # Login, register, logout functions
-    │   ├── admin.js                   # Admin dashboard logic
-    │   └── student.js                 # Student dashboard + quiz taking logic
+    │   ├── auth.js                    # Login, register, logout + session timestamp
+    │   ├── admin.js                   # Admin dashboard (session mgmt, toasts, pagination)
+    │   └── student.js                 # Student dashboard (session mgmt, toasts, answer review)
     └── pages/
-        ├── login.html                 # Login page
-        ├── register.html              # Registration page
-        ├── admin.html                 # Admin dashboard
-        └── student.html               # Student dashboard + quiz UI
+        ├── login.html                 # Login with role tabs
+        ├── register.html              # Registration with validation
+        ├── admin.html                 # Admin dashboard (Students, Question Bank, Quiz Creator)
+        └── student.html               # Student dashboard + quiz overlay
 ```
+
+---
+
+## 🔐 OOP Concepts Demonstrated
+
+| OOP Concept | Implementation |
+|-------------|----------------|
+| **Encapsulation** | JPA entities encapsulate DB fields with private access + Lombok getters/setters. `@JsonIgnore` hides password from API responses |
+| **Inheritance** | All entities extend JPA's managed lifecycle. `JpaRepository<T, ID>` provides generic CRUD |
+| **Polymorphism** | `Role` enum enables polymorphic behavior — same `User` entity behaves differently as ADMIN vs STUDENT |
+| **Abstraction** | Repository interfaces abstract away SQL — Spring Data generates implementations at runtime |
+| **Composition** | `Question` composes `List<QuestionOption>` with cascade lifecycle. `Quiz` composes `List<Question>` via join table |
+| **Design Patterns** | Repository Pattern (data access), DTO Pattern (API contracts), Builder Pattern (Lombok), MVC (Controller → Repository → DB) |
 
 ---
 
@@ -185,14 +215,12 @@ QuizForge/
 
 ### 1. Configure the Database
 
-Copy the example properties file and fill in your database credentials:
-
 ```bash
 cd quizforge-backend/src/main/resources
 cp application.properties.example application.properties
 ```
 
-Edit `application.properties` with your Neon PostgreSQL (or any PostgreSQL) credentials:
+Edit `application.properties` with your Neon PostgreSQL credentials:
 
 ```properties
 spring.datasource.url=jdbc:postgresql://your-host.neon.tech/neondb?sslmode=require
@@ -262,9 +290,10 @@ If you're using **Neon PostgreSQL**, your database is already in the cloud. No c
 | Layer | Technology |
 |-------|-----------|
 | **Frontend** | HTML5, CSS3, Vanilla JavaScript |
-| **Backend** | Java 17, Spring Boot 4, Spring Data JPA, Hibernate |
+| **Backend** | Java 17, Spring Boot 4, Spring Data JPA, Spring Cache |
 | **Database** | PostgreSQL (Neon — cloud-hosted) |
-| **Security** | BCrypt (via `org.mindrot:jbcrypt`) |
+| **Security** | BCrypt (`org.mindrot:jbcrypt`), `@JsonIgnore`, Input Validation |
+| **Performance** | `@Cacheable`, EAGER fetch, HikariCP connection pool, localStorage cache |
 | **Build Tool** | Gradle |
 | **ORM** | Hibernate with JPA annotations |
 
