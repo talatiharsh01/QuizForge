@@ -1,0 +1,257 @@
+/* ════════════════════════════════
+   LOGIN PAGE
+════════════════════════════════ */
+        #page-login {
+            min-height: calc(100vh - 73px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        #page-login.active {
+            display: flex;
+        }
+
+        .login-wrap {
+            width: 100%;
+            max-width: 420px;
+            animation: fup .5s ease both;
+        }
+
+        .login-role-tabs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: .5rem;
+            margin-bottom: 2rem;
+        }
+
+        .role-tab {
+            padding: .85rem;
+            background: var(--card);
+            border: 1.5px solid var(--border);
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+            transition: all .22s;
+            user-select: none;
+        }
+
+        .role-tab .rt-icon {
+            font-size: 1.5rem;
+            margin-bottom: .35rem;
+        }
+
+        .role-tab .rt-label {
+            font-family: 'Space Mono', monospace;
+            font-size: .75rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--muted);
+            transition: color .2s;
+        }
+
+        .role-tab.active.student {
+            border-color: var(--os);
+            background: rgba(34, 211, 238, .07);
+        }
+
+        .role-tab.active.student .rt-label {
+            color: var(--os);
+        }
+
+        .role-tab.active.admin {
+            border-color: var(--java);
+            background: rgba(249, 115, 22, .07);
+        }
+
+        .role-tab.active.admin .rt-label {
+            color: var(--java);
+        }
+
+        .login-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--java), var(--os));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform .3s ease;
+        }
+
+        .login-card.ready::before {
+            transform: scaleX(1);
+        }
+
+        .login-card-title {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: .3rem;
+        }
+
+        .login-card-sub {
+            color: var(--muted);
+            font-size: .83rem;
+            margin-bottom: 1.8rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: .75rem;
+            font-family: 'Space Mono', monospace;
+            color: var(--muted);
+            margin-bottom: .4rem;
+            letter-spacing: .05em;
+            text-transform: uppercase;
+        }
+
+        .form-group input {
+            width: 100%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: .72rem 1rem;
+            border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: .92rem;
+            outline: none;
+            transition: border-color .2s;
+        }
+
+        .form-group input:focus {
+            border-color: var(--os);
+        }
+
+        .form-group input.admin-focus:focus {
+            border-color: var(--java);
+        }
+
+        .form-group input::placeholder {
+            color: var(--muted);
+        }
+
+        .login-hint {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: .75rem 1rem;
+            margin-bottom: 1.5rem;
+            font-size: .78rem;
+            color: var(--muted);
+            line-height: 1.65;
+        }
+
+        .login-hint strong {
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .hint-row {
+            display: flex;
+            justify-content: space-between;
+            gap: .5rem;
+        }
+
+        .hint-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: .35rem;
+            font-family: 'Space Mono', monospace;
+            font-size: .68rem;
+            padding: .2rem .55rem;
+            border-radius: 5px;
+        }
+
+        .hint-badge.s {
+            background: rgba(34, 211, 238, .1);
+            color: var(--os);
+        }
+
+        .hint-badge.a {
+            background: rgba(249, 115, 22, .1);
+            color: var(--java);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: .88rem;
+            font-family: 'Space Mono', monospace;
+            font-size: .85rem;
+            font-weight: 700;
+            letter-spacing: .07em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all .22s;
+            margin-bottom: .9rem;
+        }
+
+        .login-btn.student {
+            background: linear-gradient(135deg, #22d3ee, #0891b2);
+            color: #000;
+        }
+
+        .login-btn.student:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(34, 211, 238, .25);
+        }
+
+        .login-btn.admin {
+            background: linear-gradient(135deg, var(--java), #d96208);
+            color: #000;
+        }
+
+        .login-btn.admin:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 28px rgba(249, 115, 22, .3);
+        }
+
+        .login-error {
+            display: none;
+            background: rgba(244, 63, 94, .08);
+            border: 1px solid rgba(244, 63, 94, .25);
+            border-radius: 8px;
+            padding: .6rem 1rem;
+            font-size: .8rem;
+            color: #f87171;
+            margin-bottom: .9rem;
+        }
+
+        .login-error.show {
+            display: block;
+        }
+
+        .demo-credentials {
+            text-align: center;
+            font-size: .75rem;
+            color: var(--muted);
+        }
+
+        .demo-credentials a {
+            color: var(--muted);
+            text-decoration: underline;
+            cursor: pointer;
+            transition: color .15s;
+        }
+
+        .demo-credentials a:hover {
+            color: var(--text);
+        }

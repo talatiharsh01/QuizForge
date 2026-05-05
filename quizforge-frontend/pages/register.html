@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuizForge - Register</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <header>
+        <div class="logo-mark">⚡</div>
+        <div class="logo-name">Quiz<em>Forge</em></div>
+    </header>
+
+    <div class="page active" id="page-register">
+        <div class="login-wrap" style="margin: 4rem auto;">
+            <div class="login-card ready">
+                <div class="login-card-title">Create an Account</div>
+                <div class="login-card-sub">Register to access the platform</div>
+
+                <div class="login-error" id="register-error"></div>
+                <div class="success-msg" id="register-success"></div>
+
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="reg-username" placeholder="Choose a username">
+                </div>
+
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="reg-email" placeholder="you@example.com">
+                </div>
+
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="reg-password" placeholder="Create a strong password">
+                </div>
+
+                <button class="login-btn admin" onclick="handleRegister()">Register Account</button>
+                
+                <div class="demo-credentials">
+                    Already have an account? <a href="login.html">Login here</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        async function handleRegister() {
+            const role = 'STUDENT';
+            const username = document.getElementById('reg-username').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+            
+            const errDiv = document.getElementById('register-error');
+            const succDiv = document.getElementById('register-success');
+            errDiv.classList.remove('show');
+            succDiv.classList.remove('show');
+
+            if(!username || !password || !email) {
+                errDiv.textContent = "Please fill in all fields.";
+                errDiv.classList.add('show');
+                return;
+            }
+
+            const result = await register(username, password, email, role);
+            if(result.success) {
+                succDiv.textContent = "Registration successful! Redirecting to login...";
+                succDiv.classList.add('show');
+                setTimeout(() => {
+                    window.location.href = "login.html";
+                }, 1500);
+            } else {
+                errDiv.textContent = result.message;
+                errDiv.classList.add('show');
+            }
+        }
+    </script>
+</body>
+</html>

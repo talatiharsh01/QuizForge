@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuizForge - Student Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <header>
+        <div class="logo-mark">⚡</div>
+        <div class="logo-name">Quiz<em>Forge</em></div>
+        <div class="hdr-right">
+            <div class="hdr-tag">150 Questions · 3 Topics</div>
+            <div class="user-badge" style="display:flex;">
+                <span class="role-dot student"></span><span id="badge-text">Student</span>
+            </div>
+            <button class="logout-btn" style="display:block;" onclick="logout()">↩ Sign Out</button>
+        </div>
+    </header>
+
+    <div class="page active">
+        <main>
+            <div class="dash-hero">
+                <h2>Welcome back, <span class="welcome-name" id="student-name-display">—</span> 👋</h2>
+                <p>Ready for another quiz? Your history is below.</p>
+            </div>
+
+            <div class="stats-row">
+                <div class="stat-card">
+                    <div class="stat-val sv-os" id="s-total">0</div>
+                    <div class="stat-lbl">Quizzes Taken</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-val sv-env" id="s-avg">—</div>
+                    <div class="stat-lbl">Avg Score</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-val sv-java" id="s-best">—</div>
+                    <div class="stat-lbl">Best Score</div>
+                </div>
+            </div>
+
+            <div style="margin-bottom:2.5rem;">
+                <div class="section-lbl">Recent Attempts</div>
+                <div class="history-table">
+                    <div class="ht-head">
+                        <span>Topics</span><span>Questions</span><span>Score</span><span>Date</span>
+                    </div>
+                    <div id="student-history-body">
+                        <div class="empty-history">Loading history...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Quizzes Section -->
+            <div style="margin-bottom:2.5rem;">
+                <div class="section-lbl">Assigned by Admin</div>
+                <div class="history-table" style="background: var(--surface);">
+                    <div id="admin-quizzes-list" style="padding: 1rem;">
+                        <div class="empty-history">Loading quizzes...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quiz Generator Section -->
+            <div class="hero">
+                <h1>Random 25-Q Quizzes<br>from <span class="j">Java</span> · <span class="o">OS</span> · <span class="e">Env</span></h1>
+                <p>Select topics, hit Generate — get random MCQs live on screen.</p>
+            </div>
+            <div class="topic-row">
+                <div class="tpill java active" onclick="toggleTopic('java')" id="pill-java">
+                    <div class="dot"></div>☕ Java<span class="ck">✓</span>
+                </div>
+                <div class="tpill os active" onclick="toggleTopic('os')" id="pill-os">
+                    <div class="dot"></div>🖥 OS<span class="ck">✓</span>
+                </div>
+                <div class="tpill env active" onclick="toggleTopic('env')" id="pill-env">
+                    <div class="dot"></div>🌿 Environment<span class="ck">✓</span>
+                </div>
+            </div>
+            <div class="cfg">
+                <div class="cfg-lbl">⚙ Quiz Settings</div>
+                <div class="cfg-row">
+                    <div class="cfg-group"><label>Total questions</label>
+                        <select id="totalQ">
+                            <option value="10">10 — Quick</option>
+                            <option value="25" selected>25 (recommended)</option>
+                            <option value="50">50 — Full</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <button class="gen-btn" onclick="generateQuiz()">⚡ GENERATE RANDOM QUIZ</button>
+        </main>
+    </div>
+
+    <!-- QUIZ PAGE -->
+    <div id="quiz-page" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg); z-index:9999; overflow-y:auto;">
+        <header style="position:sticky; top:0; background:var(--surface); z-index:100; border-bottom:1px solid var(--border);">
+            <div class="logo-mark">⚡</div>
+            <div class="logo-name">Quiz<em>Forge</em></div>
+            <div class="hdr-right">
+                <span id="quiz-title-display" style="font-weight:bold; margin-right:20px; color:var(--text);"></span>
+                <button class="logout-btn" onclick="exitQuiz()">Exit Quiz</button>
+            </div>
+        </header>
+        <main style="max-width: 800px; margin: 0 auto; padding: 2rem 1rem;">
+            <div id="quiz-questions-container"></div>
+            <button class="gen-btn" style="margin-top:2rem;" onclick="submitQuiz()">Submit Quiz</button>
+        </main>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/student.js"></script>
+</body>
+</html>

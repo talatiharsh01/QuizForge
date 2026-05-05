@@ -1,0 +1,114 @@
+/* ── HEADER ── */
+        header {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem 2.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo-mark {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, var(--java), #d96208);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .logo-name {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: -.03em;
+        }
+
+        .logo-name em {
+            color: var(--java);
+            font-style: normal;
+        }
+
+        .hdr-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .hdr-tag {
+            font-family: 'Space Mono', monospace;
+            font-size: .7rem;
+            letter-spacing: .12em;
+            color: var(--muted);
+            text-transform: uppercase;
+        }
+
+        .logout-btn {
+            display: none;
+            padding: .45rem 1rem;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: .8rem;
+            transition: all .2s;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .logout-btn:hover {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .user-badge {
+            display: none;
+            font-family: 'Space Mono', monospace;
+            font-size: .7rem;
+            color: var(--muted);
+            padding: .3rem .7rem;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+        }
+
+        .user-badge .role-dot {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            margin-right: .4rem;
+        }
+
+        .role-dot.admin {
+            background: var(--java);
+        }
+
+        .role-dot.student {
+            background: var(--os);
+        }
+
+        @media(max-width:580px) {
+            .hdr-tag {
+                display: none;
+            }
+
+            header {
+                padding: 1rem;
+            }
+        }
+
+        /* ── PAGES ── */
+        .page {
+            display: none;
+            position: relative;
+            z-index: 1;
+        }
+
+        .page.active {
+            display: block;
+        }

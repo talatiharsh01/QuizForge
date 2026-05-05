@@ -1,0 +1,454 @@
+/* ════════════════════════════════
+   STUDENT DASHBOARD
+════════════════════════════════ */
+        #page-student main,
+        #page-admin main {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2.5rem 1.4rem 5rem;
+        }
+
+        .dash-hero {
+            margin-bottom: 2rem;
+            animation: fup .5s ease both;
+        }
+
+        .dash-hero h2 {
+            font-family: 'Space Mono', monospace;
+            font-size: clamp(1.3rem, 3vw, 2rem);
+            font-weight: 700;
+            letter-spacing: -.03em;
+            margin-bottom: .4rem;
+        }
+
+        .dash-hero p {
+            color: var(--muted);
+            font-size: .88rem;
+        }
+
+        .welcome-name {
+            color: var(--os);
+        }
+
+        .welcome-name.admin {
+            color: var(--java);
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: .9rem;
+            margin-bottom: 2rem;
+            animation: fup .5s .1s ease both;
+        }
+
+        @media(max-width:580px) {
+            .stats-row {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.2rem 1.1rem;
+        }
+
+        .stat-val {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: .25rem;
+        }
+
+        .stat-lbl {
+            font-size: .75rem;
+            color: var(--muted);
+        }
+
+        .sv-java {
+            color: var(--java);
+        }
+
+        .sv-os {
+            color: var(--os);
+        }
+
+        .sv-env {
+            color: var(--env);
+        }
+
+        /* ── HISTORY TABLE ── */
+        .section-lbl {
+            font-family: 'Space Mono', monospace;
+            font-size: .7rem;
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            color: var(--muted);
+            margin-bottom: .9rem;
+        }
+
+        .history-table {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            animation: fup .5s .2s ease both;
+        }
+
+        .ht-head {
+            display: grid;
+            grid-template-columns: 1fr 80px 80px 90px;
+            padding: .65rem 1.2rem;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .ht-head span {
+            font-family: 'Space Mono', monospace;
+            font-size: .65rem;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: var(--muted);
+        }
+
+        .ht-row {
+            display: grid;
+            grid-template-columns: 1fr 80px 80px 90px;
+            padding: .85rem 1.2rem;
+            border-bottom: 1px solid var(--border);
+            transition: background .15s;
+            align-items: center;
+        }
+
+        .ht-row:last-child {
+            border-bottom: none;
+        }
+
+        .ht-row:hover {
+            background: var(--surface);
+        }
+
+        .ht-row span {
+            font-size: .84rem;
+        }
+
+        .ht-date {
+            color: var(--muted);
+            font-size: .78rem !important;
+        }
+
+        .score-pill {
+            display: inline-block;
+            padding: .18rem .6rem;
+            border-radius: 20px;
+            font-family: 'Space Mono', monospace;
+            font-size: .72rem;
+            font-weight: 700;
+        }
+
+        .sp-good {
+            background: rgba(163, 230, 53, .12);
+            color: var(--env);
+        }
+
+        .sp-mid {
+            background: rgba(34, 211, 238, .1);
+            color: var(--os);
+        }
+
+        .sp-low {
+            background: rgba(244, 63, 94, .08);
+            color: #f87171;
+        }
+
+        .topic-chips-sm {
+            display: flex;
+            gap: .3rem;
+            flex-wrap: wrap;
+        }
+
+        .tcs {
+            font-size: .68rem;
+            padding: .1rem .45rem;
+            border-radius: 4px;
+            font-family: 'Space Mono', monospace;
+        }
+
+        .tcs.java {
+            background: rgba(249, 115, 22, .12);
+            color: var(--java);
+        }
+
+        .tcs.os {
+            background: rgba(34, 211, 238, .12);
+            color: var(--os);
+        }
+
+        .tcs.env {
+            background: rgba(163, 230, 53, .12);
+            color: var(--env);
+        }
+
+        .empty-history {
+            padding: 2.5rem;
+            text-align: center;
+            color: var(--muted);
+            font-size: .85rem;
+        }
+
+        /* ════════════════════════════════
+   ADMIN DASHBOARD
+════════════════════════════════ */
+        .admin-tabs {
+            display: flex;
+            gap: .35rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+            animation: fup .5s .1s ease both;
+        }
+
+        .admin-tab {
+            padding: .6rem 1.2rem;
+            font-family: 'Space Mono', monospace;
+            font-size: .72rem;
+            cursor: pointer;
+            border: none;
+            background: none;
+            color: var(--muted);
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            transition: all .18s;
+            letter-spacing: .05em;
+        }
+
+        .admin-tab.active {
+            color: var(--java);
+            border-bottom-color: var(--java);
+        }
+
+        .admin-panel {
+            display: none;
+        }
+
+        .admin-panel.active {
+            display: block;
+        }
+
+        /* Students list */
+        .students-grid {
+            display: grid;
+            gap: .75rem;
+            animation: fup .5s ease both;
+        }
+
+        .student-row {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem 1.2rem;
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            align-items: center;
+            gap: 1rem;
+            transition: border-color .2s;
+        }
+
+        .student-row:hover {
+            border-color: var(--border);
+            background: var(--surface);
+        }
+
+        .sr-name {
+            font-weight: 600;
+            font-size: .9rem;
+            margin-bottom: .2rem;
+        }
+
+        .sr-email {
+            font-size: .76rem;
+            color: var(--muted);
+        }
+
+        .sr-quizzes {
+            font-family: 'Space Mono', monospace;
+            font-size: .78rem;
+            color: var(--muted);
+            text-align: right;
+        }
+
+        .sr-avg {
+            font-family: 'Space Mono', monospace;
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .btn-view {
+            padding: .4rem .85rem;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: .75rem;
+            transition: all .2s;
+        }
+
+        .btn-view:hover {
+            border-color: var(--os);
+            color: var(--os);
+        }
+
+        /* Add student form */
+        .add-student-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            animation: fup .5s ease both;
+        }
+
+        .add-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        @media(max-width:560px) {
+            .add-form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .add-btn {
+            padding: .72rem 1.6rem;
+            background: linear-gradient(135deg, var(--java), #d96208);
+            color: #000;
+            font-family: 'Space Mono', monospace;
+            font-size: .78rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 9px;
+            cursor: pointer;
+            transition: all .2s;
+            margin-top: .5rem;
+        }
+
+        .add-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(249, 115, 22, .3);
+        }
+
+        .success-msg {
+            display: none;
+            background: rgba(163, 230, 53, .1);
+            border: 1px solid rgba(163, 230, 53, .25);
+            border-radius: 8px;
+            padding: .55rem .9rem;
+            font-size: .8rem;
+            color: var(--env);
+            margin-top: .75rem;
+        }
+
+        .success-msg.show {
+            display: block;
+        }
+
+        /* Overall stats for admin */
+        .admin-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: .9rem;
+            margin-bottom: 2rem;
+            animation: fup .5s ease both;
+        }
+
+        @media(max-width:640px) {
+            .admin-stats {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .a-stat {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.2rem;
+        }
+
+        .a-stat-val {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-bottom: .2rem;
+        }
+
+        .a-stat-lbl {
+            font-size: .72rem;
+            color: var(--muted);
+        }
+
+        /* Per-student modal overlay */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .7);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            width: 100%;
+            max-width: 560px;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: fup .3s ease both;
+        }
+
+        .modal-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.3rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            background: var(--card);
+        }
+
+        .modal-head h3 {
+            font-family: 'Space Mono', monospace;
+            font-size: .95rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-size: 1.4rem;
+            cursor: pointer;
+            transition: color .15s;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: var(--text);
+        }
+
+        .modal-body {
+            padding: 1.3rem 1.5rem;
+        }

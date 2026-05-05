@@ -1,0 +1,34 @@
+spring.application.name=quizforge-backend
+
+# ---------------------------------------------------------
+# DATABASE CONFIGURATION
+# ---------------------------------------------------------
+# Replace the URL, username, and password with your own database credentials.
+# The example below is configured for PostgreSQL (e.g., Neon or local Postgres).
+
+spring.datasource.url=jdbc:postgresql://<your-database-host>.aws.neon.tech/neondb?sslmode=require
+spring.datasource.username=<your-database-username>
+spring.datasource.password=<your-database-password>
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# ---------------------------------------------------------
+# HIBERNATE & JPA CONFIGURATION
+# ---------------------------------------------------------
+# 'update' automatically updates the database schema based on your Java models.
+# Change to 'validate' or 'none' in production.
+
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+
+# ---------------------------------------------------------
+# SERVER CONFIGURATION
+# ---------------------------------------------------------
+server.port=8080
+
+# ---------------------------------------------------------
+# DEFAULT ADMIN CREDENTIALS
+# ---------------------------------------------------------
+admin.default.username=your_admin_username
+admin.default.password=your_admin_password
+admin.default.email=your_admin_email@example.com

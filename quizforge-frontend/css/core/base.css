@@ -1,0 +1,39 @@
+:root {
+            --bg: #09090f;
+            --surface: #111118;
+            --card: #15151e;
+            --border: #252535;
+            --java: #f97316;
+            --os: #22d3ee;
+            --env: #a3e635;
+            --text: #e2e2f0;
+            --muted: #5a5a72;
+            --radius: 14px;
+            --danger: #f43f5e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 50% at 50% -10%, rgba(249, 115, 22, .07), transparent),
+                radial-gradient(ellipse 60% 40% at 90% 80%, rgba(34, 211, 238, .05), transparent),
+                radial-gradient(ellipse 40% 30% at 10% 60%, rgba(163, 230, 53, .04), transparent);
+            pointer-events: none;
+            z-index: 0;
+        }

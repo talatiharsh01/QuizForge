@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuizForge - Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <header>
+        <div class="logo-mark">⚡</div>
+        <div class="logo-name">Quiz<em>Forge</em></div>
+        <div class="hdr-right">
+            <div class="hdr-tag">Admin Mode</div>
+            <div class="user-badge" style="display:flex;">
+                <span class="role-dot admin"></span><span id="badge-text">Admin</span>
+            </div>
+            <button class="logout-btn" style="display:block;" onclick="logout()">↩ Sign Out</button>
+        </div>
+    </header>
+
+    <div class="page active">
+        <main>
+            <div class="dash-hero">
+                <h2>Admin Panel — <span class="welcome-name admin" id="admin-name-display">QuizForge</span> 🛡</h2>
+                <p>Manage students, view all quiz attempts, and monitor performance.</p>
+            </div>
+
+            <div class="admin-stats">
+                <div class="a-stat">
+                    <div class="a-stat-val sv-os" id="a-students">0</div>
+                    <div class="a-stat-lbl">Students</div>
+                </div>
+                <div class="a-stat">
+                    <div class="a-stat-val sv-java" id="a-quizzes">0</div>
+                    <div class="a-stat-lbl">Total Quizzes</div>
+                </div>
+                <div class="a-stat">
+                    <div class="a-stat-val sv-env" id="a-avg">—</div>
+                    <div class="a-stat-lbl">Avg Score</div>
+                </div>
+                <div class="a-stat">
+                    <div class="a-stat-val" style="color:var(--muted)" id="a-questions">0</div>
+                    <div class="a-stat-lbl">Questions in Bank</div>
+                </div>
+            </div>
+
+            <div class="admin-tabs">
+                <button class="admin-tab active" onclick="switchAdminTab('students')">👥 Students</button>
+                <button class="admin-tab" onclick="switchAdminTab('bank')">📚 Question Bank</button>
+                <button class="admin-tab" onclick="switchAdminTab('quiz-creator')">🛠 Create Quiz</button>
+            </div>
+
+            <div id="ap-students" class="admin-panel active">
+                <div class="students-grid" id="admin-students-list">
+                    <div class="empty-history">Loading students...</div>
+                </div>
+            </div>
+
+            <div id="ap-bank" class="admin-panel">
+                <div class="add-student-card" style="margin-bottom: 2rem;">
+                    <div class="cfg-lbl" style="margin-bottom:1.2rem">➕ Add New Question</div>
+                    <div class="form-group">
+                        <label>Question Text</label>
+                        <input type="text" id="new-q-text" placeholder="Enter the question..." style="width: 100%; padding: .72rem 1rem; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 10px; font-family: 'DM Sans';">
+                    </div>
+                    <div class="form-group">
+                        <label>Topic</label>
+                        <select id="new-q-topic" style="width: 100%; padding: .72rem 1rem; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 10px; font-family: 'DM Sans'; margin-bottom: 1rem;">
+                            <option value="java">Java</option>
+                            <option value="os">Operating Systems</option>
+                            <option value="env">Environment</option>
+                        </select>
+                    </div>
+                    
+                    <label style="display:block; font-size:.75rem; color:var(--muted); font-family:'Space Mono', monospace; margin-bottom:.8rem; text-transform:uppercase;">Options (Select the correct one)</label>
+                    <div style="display:flex; gap:1rem; margin-bottom:.6rem; align-items:center;">
+                        <input type="radio" name="correct-opt" value="0" checked>
+                        <input type="text" id="opt-0" placeholder="Option 1" style="flex:1; padding: .5rem .8rem; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 6px;">
+                    </div>
+                    <div style="display:flex; gap:1rem; margin-bottom:.6rem; align-items:center;">
+                        <input type="radio" name="correct-opt" value="1">
+                        <input type="text" id="opt-1" placeholder="Option 2" style="flex:1; padding: .5rem .8rem; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 6px;">
+                    </div>
+                    <div style="display:flex; gap:1rem; margin-bottom:.6rem; align-items:center;">
+                        <input type="radio" name="correct-opt" value="2">
+                        <input type="text" id="opt-2" placeholder="Option 3" style="flex:1; padding: .5rem .8rem; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 6px;">
+                    </div>
+                    <div style="display:flex; gap:1rem; margin-bottom:1.5rem; align-items:center;">
+                        <input type="radio" name="correct-opt" value="3">
+                        <input type="text" id="opt-3" placeholder="Option 4" style="flex:1; padding: .5rem .8rem; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 6px;">
+                    </div>
+                    
+                    <button class="login-btn admin" style="width: auto; padding: .6rem 1.5rem;" onclick="addQuestion()">➕ Save Question</button>
+                    <div class="success-msg" id="q-add-success">✅ Question added successfully!</div>
+                </div>
+
+                <div class="bank-section" style="margin-top:0;">
+                    <div class="bank-lbl">📚 Full Question Bank</div>
+                    <div class="btabs">
+                        <button class="btab java active" onclick="filterQuestions('java')">☕ Java</button>
+                        <button class="btab os" onclick="filterQuestions('os')">🖥 OS</button>
+                        <button class="btab env" onclick="filterQuestions('env')">🌿 Env</button>
+                    </div>
+                    <div class="bpanel active">
+                        <div class="blist" id="question-list">Loading questions...</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="ap-quiz-creator" class="admin-panel">
+                <div class="add-student-card" style="margin-bottom: 2rem;">
+                    <div class="cfg-lbl" style="margin-bottom:1.2rem">🛠 Create a Custom Quiz</div>
+                    <div class="form-group">
+                        <label>Quiz Title</label>
+                        <input type="text" id="new-quiz-title" placeholder="e.g. Midterm Java Exam" style="width: 100%; padding: .72rem 1rem; background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: 10px; font-family: 'DM Sans'; margin-bottom: 1rem;">
+                    </div>
+                    
+                    <label style="display:block; font-size:.75rem; color:var(--muted); font-family:'Space Mono', monospace; margin-bottom:.8rem; text-transform:uppercase;">Select Questions to Include</label>
+                    <div id="quiz-question-selector" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; padding: 1rem; margin-bottom: 1.5rem; background: var(--bg);">
+                        <div class="empty-history">Loading questions...</div>
+                    </div>
+                    
+                    <button class="login-btn admin" style="width: auto; padding: .6rem 1.5rem;" onclick="saveCustomQuiz()">✅ Save Custom Quiz</button>
+                    <div class="success-msg" id="quiz-add-success">✅ Custom Quiz saved successfully!</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/admin.js"></script>
+</body>
+</html>

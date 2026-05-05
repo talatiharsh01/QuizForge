@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuizForge - Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <header>
+        <div class="logo-mark">⚡</div>
+        <div class="logo-name">Quiz<em>Forge</em></div>
+    </header>
+
+    <div class="page active" id="page-login">
+        <div class="login-wrap" style="margin: 4rem auto;">
+            <div class="login-role-tabs">
+                <div class="role-tab student active" id="rtab-student" onclick="setRole('STUDENT')">
+                    <div class="rt-icon">🎓</div>
+                    <div class="rt-label">Student</div>
+                </div>
+                <div class="role-tab admin" id="rtab-admin" onclick="setRole('ADMIN')">
+                    <div class="rt-icon">🛡</div>
+                    <div class="rt-label">Admin</div>
+                </div>
+            </div>
+
+            <div class="login-card ready" id="login-card">
+                <div class="login-card-title" id="login-card-title">Student Login</div>
+                <div class="login-card-sub" id="login-card-sub">Sign in to take quizzes and track your progress</div>
+
+                <div class="login-error" id="login-error"></div>
+
+                <div class="form-group">
+                    <label>Username or Email</label>
+                    <input type="text" id="login-username" placeholder="Enter username or email">
+                </div>
+
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="login-password" placeholder="Enter password">
+                </div>
+
+                <button class="login-btn student" id="login-btn-ui" onclick="handleLogin()">Login to Dashboard</button>
+                
+                <div class="demo-credentials">
+                    Don't have an account? <a href="register.html">Register here</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        let selectedRole = 'STUDENT';
+
+        function setRole(role) {
+            selectedRole = role;
+            document.getElementById('rtab-student').classList.remove('active');
+            document.getElementById('rtab-admin').classList.remove('active');
+            
+            const btn = document.getElementById('login-btn-ui');
+            
+            if(role === 'STUDENT') {
+                document.getElementById('rtab-student').classList.add('active');
+                document.getElementById('login-card-title').textContent = "Student Login";
+                btn.className = "login-btn student";
+            } else {
+                document.getElementById('rtab-admin').classList.add('active');
+                document.getElementById('login-card-title').textContent = "Admin Login";
+                btn.className = "login-btn admin";
+            }
+        }
+
+        async function handleLogin() {
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            const errDiv = document.getElementById('login-error');
+            errDiv.classList.remove('show');
+
+            if(!username || !password) {
+                errDiv.textContent = "Please enter both username/email and password.";
+                errDiv.classList.add('show');
+                return;
+            }
+
+            // Call Java Backend API
+            const result = await login(username, password, selectedRole);
+            
+            if(result.success) {
+                if(selectedRole === 'ADMIN') {
+                    window.location.href = "admin.html";
+                } else {
+                    window.location.href = "student.html";
+                }
+            } else {
+                errDiv.textContent = result.message;
+                errDiv.classList.add('show');
+            }
+        }
+    </script>
+</body>
+</html>
