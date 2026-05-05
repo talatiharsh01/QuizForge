@@ -37,7 +37,7 @@ public class StudentController {
 
     @GetMapping("/quizzes")
     public List<Quiz> getAdminQuizzes() {
-        return quizRepository.findAll();
+        return quizRepository.findByCreatedByRole(com.example.quizforge_backend.model.Role.ADMIN);
     }
 
     @GetMapping("/quizzes/{id}")

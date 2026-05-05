@@ -114,7 +114,7 @@ async function loadStudentHistory(studentId) {
             const pct = Math.round((a.score / a.totalQuestions) * 100);
             html += `
             <div class="ht-row">
-                <span class="topics-badge">${a.quiz.title}</span>
+                <span class="topics-badge">${a.quiz ? a.quiz.title : 'Random Quiz'}</span>
                 <span>${a.totalQuestions} Qs</span>
                 <span class="score-badge ${pct > 70 ? 'high' : 'med'}">${pct}%</span>
                 <span class="ht-date">${date}</span>
@@ -140,7 +140,7 @@ async function loadAdminQuizzes() {
         const user = JSON.parse(localStorage.getItem('currentUser'));
         const histRes = await fetch(`${API_BASE_URL}/student/attempts/${user.id}`);
         const attempts = await histRes.json();
-        const attemptedQuizIds = new Set(attempts.map(a => a.quiz.id));
+        const attemptedQuizIds = new Set(attempts.filter(a => a.quiz).map(a => a.quiz.id));
 
         const listDiv = document.getElementById('admin-quizzes-list');
         if (adminQuizzesList.length === 0) {
@@ -207,6 +207,12 @@ function startQuiz(quiz) {
     isSubmitting = false;
     document.getElementById('quiz-page').style.display = 'block';
     document.getElementById('quiz-title-display').textContent = quiz.title;
+
+    // Reset submit button & exit button (they get hidden/changed after review)
+    const submitBtn = document.querySelector('#quiz-page .gen-btn[onclick*="submitQuiz"]');
+    if (submitBtn) submitBtn.style.display = '';
+    const exitBtn = document.querySelector('#quiz-page .logout-btn[onclick*="exitQuiz"]');
+    if (exitBtn) exitBtn.textContent = 'Exit Quiz';
 
     let html = '';
     quiz.questions.forEach((q, qIndex) => {
